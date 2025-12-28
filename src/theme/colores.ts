@@ -1,7 +1,3 @@
-/**
- * Paleta de colores de AutoCiclo Mobile
- * Replicada de la aplicación de escritorio JavaFX
- */
 
 export const colores = {
   // Colores principales

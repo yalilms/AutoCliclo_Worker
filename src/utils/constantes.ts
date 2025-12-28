@@ -1,8 +1,3 @@
-/**
- * Constantes de AutoCiclo Mobile
- * Replicadas de la aplicación de escritorio JavaFX
- */
-
 // Estados de vehículo (replicados de MySQL ENUM)
 export const ESTADO_VEHICULO = ['completo', 'desguazando', 'desguazado'] as const;
 export type EstadoVehiculo = typeof ESTADO_VEHICULO[number];

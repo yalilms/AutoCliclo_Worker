@@ -1,7 +1,3 @@
-/**
- * Sistema de tipografía
- * Tamaños y pesos de fuente consistentes
- */
 
 export const tipografia = {
   // Tamaños de fuente

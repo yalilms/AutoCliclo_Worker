@@ -1,8 +1,3 @@
-/**
- * Estilos globales reutilizables
- * Estilos comunes utilizados en toda la aplicación
- */
-
 import { StyleSheet } from 'react-native';
 import { colores } from './colores';
 import { espaciado, borderRadius, elevacion } from './espaciado';

@@ -1,7 +1,3 @@
-/**
- * Sistema de espaciado consistente
- * Basado en múltiplos de 8dp (Material Design)
- */
 
 export const espaciado = {
   xs: 4,
