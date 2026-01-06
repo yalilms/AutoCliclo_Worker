@@ -8,6 +8,7 @@ import { createStackNavigator } from '@react-navigation/stack';
 import { ListadoVehiculosScreen } from '../screens/vehiculos/ListadoVehiculosScreen';
 import { FormularioVehiculoScreen } from '../screens/vehiculos/FormularioVehiculoScreen';
 import { DetalleVehiculoScreen } from '../screens/vehiculos/DetalleVehiculoScreen';
+import { FormularioExtraerPiezaScreen } from '../screens/vehiculos/FormularioExtraerPiezaScreen';
 import { colores } from '../theme/colores';
 import { tipografia } from '../theme/tipografia';
 
@@ -15,6 +16,12 @@ export type VehiculosStackParamList = {
   ListadoVehiculos: undefined;
   FormularioVehiculo: { vehiculoId?: number };
   DetalleVehiculo: { vehiculoId: number };
+  FormularioExtraerPieza: {
+    vehiculoId: number;
+    matricula: string;
+    marca: string;
+    modelo: string;
+  };
 };
 
 const Stack = createStackNavigator<VehiculosStackParamList>();
@@ -51,6 +58,13 @@ export const VehiculosNavigator: React.FC = () => {
         component={DetalleVehiculoScreen}
         options={{
           title: 'Detalle de Vehículo',
+        }}
+      />
+      <Stack.Screen
+        name="FormularioExtraerPieza"
+        component={FormularioExtraerPiezaScreen}
+        options={{
+          title: 'Extraer Pieza',
         }}
       />
     </Stack.Navigator>

@@ -88,6 +88,16 @@ export const DetalleVehiculoScreen: React.FC = () => {
     );
   };
 
+  const manejarExtraerPieza = () => {
+    if (!vehiculo) return;
+    navigation.navigate('FormularioExtraerPieza', {
+      vehiculoId: vehiculo.id_vehiculo!,
+      matricula: vehiculo.matricula,
+      marca: vehiculo.marca,
+      modelo: vehiculo.modelo,
+    });
+  };
+
   if (cargando) {
     return (
       <View style={estilos.cargando}>
@@ -157,9 +167,17 @@ export const DetalleVehiculoScreen: React.FC = () => {
 
           {/* Piezas extraídas */}
           <Card>
-            <Text style={estilos.seccionTitulo}>
-              Piezas Extraídas ({vehiculo.total_piezas})
-            </Text>
+            <View style={estilos.piezasHeader}>
+              <Text style={estilos.seccionTitulo}>
+                Piezas Extraídas ({vehiculo.total_piezas})
+              </Text>
+              <Boton
+                titulo="+ Extraer Pieza"
+                onPress={manejarExtraerPieza}
+                variante="primario"
+                estilo={estilos.botonExtraer}
+              />
+            </View>
 
             {piezas.length > 0 ? (
               <View>
@@ -184,7 +202,12 @@ export const DetalleVehiculoScreen: React.FC = () => {
                 ))}
               </View>
             ) : (
-              <Text style={estilos.sinPiezas}>No hay piezas extraídas todavía</Text>
+              <View>
+                <Text style={estilos.sinPiezas}>No hay piezas extraídas todavía</Text>
+                <Text style={estilos.sinPiezasSubtexto}>
+                  Pulsa "Extraer Pieza" para registrar una nueva pieza de este vehículo
+                </Text>
+              </View>
             )}
           </Card>
 
@@ -313,6 +336,16 @@ const estilos = StyleSheet.create({
     color: colores.texto,
     marginBottom: espaciado.md,
   },
+  piezasHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: espaciado.md,
+  },
+  botonExtraer: {
+    paddingHorizontal: espaciado.md,
+    minWidth: 120,
+  },
   piezaItem: {
     borderLeftWidth: 3,
     borderLeftColor: colores.primario,
@@ -354,6 +387,12 @@ const estilos = StyleSheet.create({
     color: colores.textoSecundario,
     textAlign: 'center',
     fontStyle: 'italic',
+  },
+  sinPiezasSubtexto: {
+    fontSize: tipografia.tamanoFuente.sm,
+    color: colores.textoSecundario,
+    textAlign: 'center',
+    marginTop: espaciado.sm,
   },
   observaciones: {
     fontSize: tipografia.tamanoFuente.md,

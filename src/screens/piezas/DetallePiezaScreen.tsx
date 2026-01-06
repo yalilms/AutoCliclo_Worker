@@ -12,10 +12,13 @@ import {
   Image,
   Alert,
   ActivityIndicator,
+  TouchableOpacity,
 } from 'react-native';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { RouteProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
+import { MaterialIcons } from '@expo/vector-icons';
+import QRCode from 'react-native-qrcode-svg';
 import { PiezasStackParamList } from '../../navigation/PiezasNavigator';
 import { Boton } from '../../components/common/Boton';
 import { Card } from '../../components/common/Card';
@@ -80,6 +83,7 @@ export const DetallePiezaScreen: React.FC = () => {
       ]
     );
   };
+
 
   if (cargando) {
     return (
@@ -161,7 +165,7 @@ export const DetallePiezaScreen: React.FC = () => {
 
           {/* Información principal */}
           <Card>
-            <CampoDetalle etiqueta="Precio de Venta" valor={`€${pieza.precio_venta.toFixed(2)}`} />
+            <CampoDetalle etiqueta="Precio de Venta" valor={`${pieza.precio_venta.toFixed(2)}€`} />
             <CampoDetalle
               etiqueta="Stock Disponible"
               valor={`${pieza.stock_disponible} unidades`}
@@ -176,6 +180,23 @@ export const DetallePiezaScreen: React.FC = () => {
                 {estadoStock.texto}
               </Text>
             </View>
+          </Card>
+
+          {/* Código QR */}
+          <Card>
+            <Text style={estilos.etiqueta}>Código QR</Text>
+            <View style={estilos.qrContainer}>
+              <QRCode
+                value={pieza.codigo_pieza}
+                size={200}
+                color={colores.texto}
+                backgroundColor={colores.superficie}
+              />
+              <Text style={estilos.qrTexto}>{pieza.codigo_pieza}</Text>
+            </View>
+            <Text style={estilos.qrDescripcion}>
+              Escanea este código para identificar rápidamente la pieza
+            </Text>
           </Card>
 
           {/* Ubicación y compatibilidad */}
@@ -341,6 +362,26 @@ const estilos = StyleSheet.create({
   estadoStockTexto: {
     fontSize: tipografia.tamanoFuente.md,
     fontWeight: tipografia.pesoFuente.semibold as any,
+  },
+  qrContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: espaciado.lg,
+    backgroundColor: colores.superficie,
+    borderRadius: borderRadius.sm,
+  },
+  qrTexto: {
+    fontSize: tipografia.tamanoFuente.lg,
+    fontWeight: tipografia.pesoFuente.semibold as any,
+    color: colores.texto,
+    marginTop: espaciado.md,
+    letterSpacing: 1,
+  },
+  qrDescripcion: {
+    fontSize: tipografia.tamanoFuente.sm,
+    color: colores.textoSecundario,
+    textAlign: 'center',
+    marginTop: espaciado.sm,
   },
   botonesContainer: {
     flexDirection: 'row',

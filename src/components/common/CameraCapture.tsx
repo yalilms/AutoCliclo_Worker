@@ -129,7 +129,11 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({
         <CameraView style={estilos.camara} facing={facing} ref={cameraRef}>
           {/* Header con botón cerrar */}
           <View style={estilos.header}>
-            <TouchableOpacity style={estilos.botonHeader} onPress={onClose}>
+            <TouchableOpacity
+              style={estilos.botonHeaderCerrar}
+              onPress={onClose}
+              activeOpacity={0.7}
+            >
               <MaterialIcons name="close" size={32} color={colores.superficie} />
             </TouchableOpacity>
             <Text style={estilos.titulo}>Capturar Imagen</Text>
@@ -190,6 +194,14 @@ const estilos = StyleSheet.create({
     height: 40,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  botonHeaderCerrar: {
+    width: 50,
+    height: 50,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+    borderRadius: 25,
   },
   titulo: {
     fontSize: tipografia.tamanoFuente.lg,

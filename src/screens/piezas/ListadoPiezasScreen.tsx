@@ -3,7 +3,7 @@
  * Muestra todas las piezas con búsqueda, paginación y navegación
  */
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -134,7 +134,7 @@ export const ListadoPiezasScreen: React.FC = () => {
   );
 
   /**
-   * Renderizar footer de la lista (paginación)
+   * Renderizar footer de la lista (contador de piezas)
    */
   const renderFooter = () => {
     if (totalPiezas === 0) return null;
@@ -142,22 +142,8 @@ export const ListadoPiezasScreen: React.FC = () => {
     return (
       <View style={estilos.paginacion}>
         <Text style={estilos.paginacionTexto}>
-          Página {paginaActual} de {totalPaginas} ({totalPiezas} piezas)
+          {totalPiezas} {totalPiezas === 1 ? 'pieza' : 'piezas'}
         </Text>
-        <View style={estilos.botonesNavegacion}>
-          <Boton
-            titulo="Anterior"
-            onPress={() => cargarPiezas(paginaActual - 1, terminoDebounced)}
-            deshabilitado={paginaActual === 1}
-            estilo={estilos.botonNavegacion}
-          />
-          <Boton
-            titulo="Siguiente"
-            onPress={() => cargarPiezas(paginaActual + 1, terminoDebounced)}
-            deshabilitado={paginaActual >= totalPaginas}
-            estilo={estilos.botonNavegacion}
-          />
-        </View>
       </View>
     );
   };
@@ -267,13 +253,5 @@ const estilos = StyleSheet.create({
   paginacionTexto: {
     fontSize: tipografia.tamanoFuente.sm,
     color: colores.textoSecundario,
-    marginBottom: espaciado.md,
-  },
-  botonesNavegacion: {
-    flexDirection: 'row',
-    gap: espaciado.md,
-  },
-  botonNavegacion: {
-    flex: 1,
   },
 });

@@ -20,11 +20,13 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { PiezasStackParamList } from '../../navigation/PiezasNavigator';
 import { Input } from '../../components/common/Input';
 import { Boton } from '../../components/common/Boton';
+import { Selector } from '../../components/common/Selector';
+import { SelectorMultiple } from '../../components/common/SelectorMultiple';
 import { CameraCapture } from '../../components/common/CameraCapture';
-import { BarcodeScanner } from '../../components/common/BarcodeScanner';
 import { Pieza, PiezaFormData, formDataToPieza, piezaToFormData } from '../../models/Pieza';
 import { PiezaService } from '../../services/PiezaService';
 import { CATEGORIAS_PIEZA, CODIGO_PIEZA_REGEX } from '../../utils/constantes';
+import { obtenerUbicacionesPiezas, obtenerMarcas } from '../../utils/datosVehiculos';
 import { colores } from '../../theme/colores';
 import { espaciado } from '../../theme/espaciado';
 import { tipografia } from '../../theme/tipografia';
@@ -51,7 +53,6 @@ export const FormularioPiezaScreen: React.FC = () => {
   const [errores, setErrores] = useState<Partial<Record<keyof PiezaFormData, string>>>({});
   const [imagen, setImagen] = useState<string | null>(null);
   const [mostrarCamara, setMostrarCamara] = useState(false);
-  const [mostrarScanner, setMostrarScanner] = useState(false);
 
   const modoEdicion = !!piezaId;
 
@@ -89,14 +90,6 @@ export const FormularioPiezaScreen: React.FC = () => {
     setMostrarCamara(false);
   };
 
-  /**
-   * Manejar escaneo de código QR/barras
-   */
-  const manejarEscaneo = (codigo: string) => {
-    actualizarCampo('codigo_pieza', codigo.toUpperCase());
-    setMostrarScanner(false);
-    Alert.alert('Código escaneado', `Se ha completado el código: ${codigo.toUpperCase()}`);
-  };
 
   /**
    * Eliminar imagen
@@ -218,27 +211,16 @@ export const FormularioPiezaScreen: React.FC = () => {
             {modoEdicion ? 'Editar Pieza' : 'Nueva Pieza'}
           </Text>
 
-          {/* Código de pieza con scanner */}
-          <View>
-            <Input
-              etiqueta="Código de Pieza *"
-              placeholder="Ej: MOT-123"
-              value={formulario.codigo_pieza}
-              onChangeText={(valor) => actualizarCampo('codigo_pieza', valor.toUpperCase())}
-              error={errores.codigo_pieza}
-              editable={!modoEdicion} // No editable en modo edición
-              autoCapitalize="characters"
-            />
-            {!modoEdicion && (
-              <TouchableOpacity
-                style={estilos.botonScanner}
-                onPress={() => setMostrarScanner(true)}
-              >
-                <MaterialIcons name="qr-code-scanner" size={24} color={colores.primario} />
-                <Text style={estilos.textoBotonScanner}>Escanear código</Text>
-              </TouchableOpacity>
-            )}
-          </View>
+          {/* Código de pieza */}
+          <Input
+            etiqueta="Código de Pieza *"
+            placeholder="Ej: MOT-123"
+            value={formulario.codigo_pieza}
+            onChangeText={(valor) => actualizarCampo('codigo_pieza', valor.toUpperCase())}
+            error={errores.codigo_pieza}
+            editable={!modoEdicion} // No editable en modo edición
+            autoCapitalize="characters"
+          />
 
           {/* Nombre */}
           <Input
@@ -304,22 +286,21 @@ export const FormularioPiezaScreen: React.FC = () => {
           />
 
           {/* Ubicación almacén */}
-          <Input
+          <Selector
             etiqueta="Ubicación en Almacén"
-            placeholder="Ej: A-1-2"
-            value={formulario.ubicacion_almacen}
-            onChangeText={(valor) => actualizarCampo('ubicacion_almacen', valor)}
-            autoCapitalize="characters"
+            placeholder="Selecciona una ubicación"
+            valor={formulario.ubicacion_almacen}
+            opciones={obtenerUbicacionesPiezas()}
+            onSeleccionar={(valor) => actualizarCampo('ubicacion_almacen', valor)}
           />
 
           {/* Marcas compatibles */}
-          <Input
+          <SelectorMultiple
             etiqueta="Marcas Compatibles"
-            placeholder="Ej: Volkswagen Golf 2015-2020"
-            value={formulario.compatible_marcas}
-            onChangeText={(valor) => actualizarCampo('compatible_marcas', valor)}
-            multiline
-            numberOfLines={3}
+            placeholder="Selecciona las marcas compatibles"
+            valores={formulario.compatible_marcas ? formulario.compatible_marcas.split(', ') : []}
+            opciones={obtenerMarcas()}
+            onCambio={(marcas) => actualizarCampo('compatible_marcas', marcas.join(', '))}
           />
 
           {/* Descripción */}
@@ -391,15 +372,6 @@ export const FormularioPiezaScreen: React.FC = () => {
         onCapture={manejarCapturaImagen}
         onClose={() => setMostrarCamara(false)}
       />
-
-      {/* Modal de Scanner */}
-      <BarcodeScanner
-        visible={mostrarScanner}
-        onScan={manejarEscaneo}
-        onClose={() => setMostrarScanner(false)}
-        titulo="Escanear Código de Pieza"
-        mensaje="Apunta al código QR o de barras de la pieza"
-      />
     </View>
   );
 };
@@ -460,25 +432,6 @@ const estilos = StyleSheet.create({
   },
   boton: {
     flex: 1,
-  },
-  botonScanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: espaciado.sm,
-    paddingHorizontal: espaciado.md,
-    marginTop: espaciado.sm,
-    marginBottom: espaciado.md,
-    backgroundColor: colores.superficie,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: colores.primario,
-    gap: espaciado.sm,
-  },
-  textoBotonScanner: {
-    fontSize: tipografia.tamanoFuente.md,
-    color: colores.primario,
-    fontWeight: tipografia.pesoFuente.medio as any,
   },
   imagenContainer: {
     marginBottom: espaciado.md,

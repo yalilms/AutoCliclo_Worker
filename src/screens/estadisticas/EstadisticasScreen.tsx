@@ -134,7 +134,7 @@ export const EstadisticasScreen: React.FC = () => {
 
   // Preparar datos para gráfico de barras (piezas por categoría)
   const dataBarras = {
-    labels: CATEGORIAS_PIEZA.map(cat => cat.substring(0, 3).toUpperCase()),
+    labels: ['MOT', 'CAR', 'INT', 'ELE', 'RUE', 'OTR'],
     datasets: [
       {
         data: CATEGORIAS_PIEZA.map(
@@ -209,32 +209,38 @@ export const EstadisticasScreen: React.FC = () => {
         {/* Gráfico de Barras - Piezas por Categoría */}
         <Card estilo={estilos.tarjetaGrafico}>
           <Text style={estilos.tituloGrafico}>Piezas por Categoría</Text>
-          <BarChart
-            data={dataBarras}
-            width={screenWidth - 60}
-            height={220}
-            yAxisLabel=""
-            yAxisSuffix=""
-            chartConfig={chartConfig}
-            verticalLabelRotation={0}
-            style={estilos.grafico}
-          />
+          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+            <BarChart
+              data={dataBarras}
+              width={Math.max(screenWidth - 40, 380)}
+              height={220}
+              yAxisLabel=""
+              yAxisSuffix=""
+              chartConfig={chartConfig}
+              verticalLabelRotation={0}
+              fromZero
+              style={estilos.grafico}
+            />
+          </ScrollView>
         </Card>
 
         {/* Gráfico de Torta - Vehículos por Estado */}
         <Card estilo={estilos.tarjetaGrafico}>
           <Text style={estilos.tituloGrafico}>Vehículos por Estado</Text>
-          <PieChart
-            data={dataTorta}
-            width={screenWidth - 60}
-            height={220}
-            chartConfig={chartConfig}
-            accessor="population"
-            backgroundColor="transparent"
-            paddingLeft="15"
-            absolute
-            style={estilos.grafico}
-          />
+          <View style={estilos.pieChartContainer}>
+            <PieChart
+              data={dataTorta.filter(d => d.population > 0)}
+              width={screenWidth - 40}
+              height={200}
+              chartConfig={chartConfig}
+              accessor="population"
+              backgroundColor="transparent"
+              paddingLeft="15"
+              center={[10, 0]}
+              absolute
+              style={estilos.grafico}
+            />
+          </View>
         </Card>
 
         {/* Detalles por Categoría */}
@@ -315,6 +321,10 @@ const estilos = StyleSheet.create({
   grafico: {
     marginVertical: espaciado.sm,
     borderRadius: 16,
+  },
+  pieChartContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   tarjetaDetalle: {
     padding: espaciado.md,

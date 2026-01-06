@@ -91,7 +91,7 @@ export const PiezaCard: React.FC<PiezaCardProps> = ({ pieza, onPress }) => {
 
           {/* Precio y stock */}
           <View style={estilos.footer}>
-            <Text style={estilos.precio}>€{pieza.precio_venta.toFixed(2)}</Text>
+            <Text style={estilos.precio}>{pieza.precio_venta.toFixed(2)}€</Text>
             <View style={estilos.stockContainer}>
               <View style={[estilos.indicadorStock, { backgroundColor: estadoStock.color }]} />
               <Text style={estilos.stockTexto}>

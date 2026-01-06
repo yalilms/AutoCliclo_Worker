@@ -119,22 +119,8 @@ export const ListadoVehiculosScreen: React.FC = () => {
     return (
       <View style={estilos.paginacion}>
         <Text style={estilos.paginacionTexto}>
-          Página {paginaActual} de {totalPaginas} ({totalVehiculos} vehículos)
+          {totalVehiculos} {totalVehiculos === 1 ? 'vehículo' : 'vehículos'}
         </Text>
-        <View style={estilos.botonesNavegacion}>
-          <Boton
-            titulo="Anterior"
-            onPress={() => cargarVehiculos(paginaActual - 1, terminoDebounced, filtroEstado)}
-            deshabilitado={paginaActual === 1}
-            estilo={estilos.botonNavegacion}
-          />
-          <Boton
-            titulo="Siguiente"
-            onPress={() => cargarVehiculos(paginaActual + 1, terminoDebounced, filtroEstado)}
-            deshabilitado={paginaActual >= totalPaginas}
-            estilo={estilos.botonNavegacion}
-          />
-        </View>
       </View>
     );
   };
