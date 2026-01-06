@@ -1,12 +1,46 @@
 /**
- * Configuración de la base de datos SQLite
- * Replicada del esquema MySQL de la aplicación de escritorio AutoCiclo
+ * Configuración de la base de datos SQLite con react-native-sqlite-storage
+ * Siguiendo el tutorial del profesor (Bare Workflow)
  */
 
-import * as SQLite from 'expo-sqlite';
+import SQLite from 'react-native-sqlite-storage';
 
-// Abrir/crear base de datos
-export const db = SQLite.openDatabaseSync('autociclo.db');
+// Configuración de SQLite
+SQLite.DEBUG(true);
+SQLite.enablePromise(true);
+
+let db: SQLite.SQLiteDatabase;
+
+/**
+ * Abrir/crear base de datos
+ */
+export const abrirBaseDatos = async (): Promise<SQLite.SQLiteDatabase> => {
+  if (db) {
+    return db;
+  }
+
+  try {
+    db = await SQLite.openDatabase({
+      name: 'autociclo.db',
+      location: 'default',
+    });
+    console.log('✅ Base de datos abierta correctamente');
+    return db;
+  } catch (error) {
+    console.error('❌ Error al abrir la base de datos:', error);
+    throw error;
+  }
+};
+
+/**
+ * Obtener instancia de la base de datos
+ */
+export const obtenerDB = async (): Promise<SQLite.SQLiteDatabase> => {
+  if (!db) {
+    db = await abrirBaseDatos();
+  }
+  return db;
+};
 
 /**
  * Inicializar la base de datos con las 3 tablas principales
@@ -14,13 +48,15 @@ export const db = SQLite.openDatabaseSync('autociclo.db');
  */
 export const inicializarBaseDatos = async (): Promise<void> => {
   try {
+    const database = await obtenerDB();
+
     // Habilitar claves foráneas (importante para CASCADE)
-    await db.execAsync('PRAGMA foreign_keys = ON;');
+    await database.executeSql('PRAGMA foreign_keys = ON;');
 
     // ============================================================
     // TABLA 1: VEHICULOS (replicada de MySQL)
     // ============================================================
-    await db.execAsync(`
+    await database.executeSql(`
       CREATE TABLE IF NOT EXISTS vehiculos (
         id_vehiculo INTEGER PRIMARY KEY AUTOINCREMENT,
         matricula TEXT UNIQUE NOT NULL,
@@ -40,7 +76,7 @@ export const inicializarBaseDatos = async (): Promise<void> => {
     // ============================================================
     // TABLA 2: PIEZAS (replicada de MySQL)
     // ============================================================
-    await db.execAsync(`
+    await database.executeSql(`
       CREATE TABLE IF NOT EXISTS piezas (
         id_pieza INTEGER PRIMARY KEY AUTOINCREMENT,
         codigo_pieza TEXT UNIQUE NOT NULL,
@@ -59,8 +95,9 @@ export const inicializarBaseDatos = async (): Promise<void> => {
     // ============================================================
     // TABLA 3: INVENTARIO_PIEZAS (tabla de relación N:N)
     // ============================================================
-    await db.execAsync(`
+    await database.executeSql(`
       CREATE TABLE IF NOT EXISTS inventario_piezas (
+        id_inventario INTEGER PRIMARY KEY AUTOINCREMENT,
         id_vehiculo INTEGER NOT NULL,
         id_pieza INTEGER NOT NULL,
         cantidad INTEGER NOT NULL DEFAULT 1,
@@ -68,7 +105,6 @@ export const inicializarBaseDatos = async (): Promise<void> => {
         fecha_extraccion TEXT NOT NULL,
         precio_unitario REAL DEFAULT 0,
         notas TEXT,
-        PRIMARY KEY (id_vehiculo, id_pieza),
         FOREIGN KEY (id_vehiculo) REFERENCES vehiculos(id_vehiculo) ON DELETE CASCADE,
         FOREIGN KEY (id_pieza) REFERENCES piezas(id_pieza) ON DELETE CASCADE
       );
@@ -77,16 +113,30 @@ export const inicializarBaseDatos = async (): Promise<void> => {
     // ============================================================
     // ÍNDICES PARA MEJORAR RENDIMIENTO
     // ============================================================
-    await db.execAsync(`
-      CREATE INDEX IF NOT EXISTS idx_vehiculos_matricula ON vehiculos(matricula);
-      CREATE INDEX IF NOT EXISTS idx_vehiculos_estado ON vehiculos(estado);
-      CREATE INDEX IF NOT EXISTS idx_vehiculos_marca ON vehiculos(marca);
-      CREATE INDEX IF NOT EXISTS idx_piezas_codigo ON piezas(codigo_pieza);
-      CREATE INDEX IF NOT EXISTS idx_piezas_categoria ON piezas(categoria);
-      CREATE INDEX IF NOT EXISTS idx_piezas_nombre ON piezas(nombre);
-      CREATE INDEX IF NOT EXISTS idx_inventario_vehiculo ON inventario_piezas(id_vehiculo);
-      CREATE INDEX IF NOT EXISTS idx_inventario_pieza ON inventario_piezas(id_pieza);
-    `);
+    await database.executeSql(
+      'CREATE INDEX IF NOT EXISTS idx_vehiculos_matricula ON vehiculos(matricula);'
+    );
+    await database.executeSql(
+      'CREATE INDEX IF NOT EXISTS idx_vehiculos_estado ON vehiculos(estado);'
+    );
+    await database.executeSql(
+      'CREATE INDEX IF NOT EXISTS idx_vehiculos_marca ON vehiculos(marca);'
+    );
+    await database.executeSql(
+      'CREATE INDEX IF NOT EXISTS idx_piezas_codigo ON piezas(codigo_pieza);'
+    );
+    await database.executeSql(
+      'CREATE INDEX IF NOT EXISTS idx_piezas_categoria ON piezas(categoria);'
+    );
+    await database.executeSql(
+      'CREATE INDEX IF NOT EXISTS idx_piezas_nombre ON piezas(nombre);'
+    );
+    await database.executeSql(
+      'CREATE INDEX IF NOT EXISTS idx_inventario_vehiculo ON inventario_piezas(id_vehiculo);'
+    );
+    await database.executeSql(
+      'CREATE INDEX IF NOT EXISTS idx_inventario_pieza ON inventario_piezas(id_pieza);'
+    );
 
     console.log('✅ Base de datos inicializada correctamente');
   } catch (error) {
@@ -101,11 +151,10 @@ export const inicializarBaseDatos = async (): Promise<void> => {
  */
 export const limpiarBaseDatos = async (): Promise<void> => {
   try {
-    await db.execAsync(`
-      DROP TABLE IF EXISTS inventario_piezas;
-      DROP TABLE IF EXISTS piezas;
-      DROP TABLE IF EXISTS vehiculos;
-    `);
+    const database = await obtenerDB();
+    await database.executeSql('DROP TABLE IF EXISTS inventario_piezas;');
+    await database.executeSql('DROP TABLE IF EXISTS piezas;');
+    await database.executeSql('DROP TABLE IF EXISTS vehiculos;');
     console.log('✅ Base de datos limpiada');
     await inicializarBaseDatos();
   } catch (error) {
@@ -118,15 +167,20 @@ export const limpiarBaseDatos = async (): Promise<void> => {
  * Ejecutar una consulta SQL con parámetros (INSERT, UPDATE, DELETE)
  * @param sql Consulta SQL con placeholders (?)
  * @param params Parámetros para reemplazar los placeholders
- * @returns Resultado de la ejecución
+ * @returns Resultado de la ejecución con lastInsertRowId
  */
 export const ejecutarConsulta = async (
   sql: string,
   params: any[] = []
-): Promise<SQLite.SQLiteRunResult> => {
+): Promise<{ insertId?: number; rowsAffected: number }> => {
   try {
-    const resultado = await db.runAsync(sql, params);
-    return resultado;
+    const database = await obtenerDB();
+    const [resultSet] = await database.executeSql(sql, params);
+
+    return {
+      insertId: resultSet.insertId,
+      rowsAffected: resultSet.rowsAffected,
+    };
   } catch (error) {
     console.error('❌ Error en consulta SQL:', error);
     console.error('SQL:', sql);
@@ -146,8 +200,16 @@ export const obtenerResultados = async <T = any>(
   params: any[] = []
 ): Promise<T[]> => {
   try {
-    const resultado = await db.getAllAsync<T>(sql, params);
-    return resultado;
+    const database = await obtenerDB();
+    const [resultSet] = await database.executeSql(sql, params);
+
+    // Convertir ResultSet a array
+    const resultados: T[] = [];
+    for (let i = 0; i < resultSet.rows.length; i++) {
+      resultados.push(resultSet.rows.item(i));
+    }
+
+    return resultados;
   } catch (error) {
     console.error('❌ Error al obtener resultados:', error);
     console.error('SQL:', sql);
@@ -167,8 +229,14 @@ export const obtenerUnResultado = async <T = any>(
   params: any[] = []
 ): Promise<T | null> => {
   try {
-    const resultado = await db.getFirstAsync<T>(sql, params);
-    return resultado || null;
+    const database = await obtenerDB();
+    const [resultSet] = await database.executeSql(sql, params);
+
+    if (resultSet.rows.length > 0) {
+      return resultSet.rows.item(0) as T;
+    }
+
+    return null;
   } catch (error) {
     console.error('❌ Error al obtener resultado:', error);
     console.error('SQL:', sql);
@@ -183,11 +251,12 @@ export const obtenerUnResultado = async <T = any>(
  * @param callback Función que ejecuta las consultas
  */
 export const ejecutarTransaccion = async (
-  callback: () => Promise<void>
+  callback: (tx: any) => Promise<void>
 ): Promise<void> => {
   try {
-    await db.withTransactionAsync(async () => {
-      await callback();
+    const database = await obtenerDB();
+    await database.transaction(async (tx: any) => {
+      await callback(tx);
     });
     console.log('✅ Transacción completada');
   } catch (error) {
@@ -223,6 +292,88 @@ export const existeRegistro = async (
     return (resultado?.count ?? 0) > 0;
   } catch (error) {
     console.error('❌ Error al verificar registro:', error);
+    throw error;
+  }
+};
+
+
+/**
+ * Sembrar datos de prueba (Vehículos, Piezas e Inventario)
+ * Se ejecuta si la base de datos está vacía
+ */
+export const sembrarDatosPrueba = async (): Promise<void> => {
+  try {
+    const db = await obtenerDB();
+
+    // 1. Verificar si ya existen datos
+    const conteoVehiculos = await obtenerUnResultado<{ count: number }>(
+      'SELECT COUNT(*) as count FROM vehiculos'
+    );
+
+    if ((conteoVehiculos?.count ?? 0) > 0) {
+      console.log('ℹ️ La base de datos ya tiene datos, saltando siembra.');
+      return;
+    }
+
+    console.log('🌱 Sembrando datos de prueba...');
+
+    await db.transaction(async (tx) => {
+      // 2. Insertar 5 Vehículos
+      // -------------------------------------------------------------
+      tx.executeSql(`
+        INSERT INTO vehiculos (matricula, marca, modelo, anio, color, fecha_entrada, estado, precio_compra, kilometraje, ubicacion_gps, observaciones)
+        VALUES 
+        ('1234ABC', 'Toyota', 'Corolla', 2018, 'Blanco', '2025-01-01', 'completo', 5000, 120000, '40.4168,-3.7038', 'Vehículo en buen estado general'),
+        ('5678DEF', 'Ford', 'Focus', 2015, 'Azul', '2025-01-02', 'desguazando', 3000, 180000, '40.4168,-3.7038', 'Golpe frontal'),
+        ('9012GHI', 'Seat', 'Ibiza', 2010, 'Rojo', '2025-01-03', 'desguazado', 1500, 250000, '40.4168,-3.7038', 'Motor gripado'),
+        ('3456JKL', 'Volkswagen', 'Golf', 2020, 'Negro', '2025-01-04', 'completo', 8000, 80000, '40.4168,-3.7038', 'Recuperado de robo'),
+        ('7890MNO', 'Renault', 'Clio', 2012, 'Gris', '2025-01-05', 'desguazando', 2000, 200000, '40.4168,-3.7038', 'Avería eléctrica');
+      `);
+
+      // 3. Insertar 5 Piezas
+      // -------------------------------------------------------------
+      tx.executeSql(`
+        INSERT INTO piezas (codigo_pieza, nombre, categoria, precio_venta, stock_disponible, stock_minimo, ubicacion_almacen, descripcion)
+        VALUES
+        ('M-001', 'Alternador', 'motor', 150.00, 5, 2, 'Estantería A1', 'Alternador válido para varios modelos'),
+        ('C-001', 'Paragolpes Delantero', 'carroceria', 80.00, 3, 1, 'Estantería B2', 'Paragolpes color negro, arañazos leves'),
+        ('I-001', 'Asiento Conductor', 'interior', 120.00, 2, 1, 'Estantería C3', 'Asiento de tela, sin roturas'),
+        ('E-001', 'Centralita Motor', 'electronica', 300.00, 1, 1, 'Caja fuerte', 'ECU reprogramada'),
+        ('R-001', 'Llanta Aleación 17"', 'ruedas', 90.00, 4, 4, 'Patio', 'Modelo deportivo 5 radios');
+      `);
+
+      // 4. Insertar 5 Registros de Inventario (Relación N:N)
+      // Asumimos que los IDs son 1-5 porque acabamos de insertar (y es autoincrement)
+      // -------------------------------------------------------------
+      tx.executeSql(`
+        INSERT INTO inventario_piezas (id_vehiculo, id_pieza, cantidad, estado_pieza, fecha_extraccion, precio_unitario, notas)
+        VALUES
+        (1, 1, 1, 'usada', '2025-01-06', 150.00, 'Extraído de Toyota Corolla'),
+        (2, 2, 1, 'reparada', '2025-01-06', 80.00, 'Paragolpes de Ford Focus, reparado'),
+        (3, 3, 1, 'usada', '2025-01-06', 120.00, 'Asiento de Seat Ibiza'),
+        (4, 4, 1, 'nueva', '2025-01-06', 300.00, 'Centralita de Golf casi nueva'),
+        (5, 5, 4, 'usada', '2025-01-06', 90.00, 'Juego completo de llantas Clio');
+      `);
+    });
+
+    console.log('✅ Datos de prueba sembrados correctamente');
+  } catch (error) {
+    console.error('❌ Error al sembrar datos:', error);
+    // No lanzamos error para no detener la app, solo logueamos
+  }
+};
+
+/**
+ * Cerrar la base de datos
+ */
+export const cerrarBaseDatos = async (): Promise<void> => {
+  try {
+    if (db) {
+      await db.close();
+      console.log('✅ Base de datos cerrada');
+    }
+  } catch (error) {
+    console.error('❌ Error al cerrar la base de datos:', error);
     throw error;
   }
 };

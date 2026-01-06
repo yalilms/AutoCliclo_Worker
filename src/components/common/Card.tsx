@@ -11,7 +11,7 @@ import { espaciado, borderRadius, elevacion } from '../../theme/espaciado';
 interface CardProps {
   children: React.ReactNode;
   onPress?: () => void;
-  estilo?: ViewStyle;
+  estilo?: ViewStyle | ViewStyle[];
   presionable?: boolean;
   elevacionCard?: 'sm' | 'md' | 'lg';
 }

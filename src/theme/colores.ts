@@ -11,6 +11,7 @@ export const colores = {
   // Fondos
   fondo: '#F5F5F5',
   superficie: '#FFFFFF',
+  fondoOscuro: '#000000',
 
   // Textos
   texto: '#212121',

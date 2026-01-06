@@ -1,288 +1,230 @@
+/**
+ * App Principal de AutoCiclo Mobile
+ * Navegación con tabs para Piezas, Vehículos, Inventario y Estadísticas
+ */
+
 import React, { useState, useEffect } from 'react';
 import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View, ScrollView, Alert } from 'react-native';
-import { Boton } from './src/components/common/Boton';
-import { Input } from './src/components/common/Input';
-import { Card } from './src/components/common/Card';
+import { NavigationContainer } from '@react-navigation/native';
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { MaterialIcons } from '@expo/vector-icons';
+import { Alert, ActivityIndicator, View, Text, StyleSheet } from 'react-native';
+
+// Navigation
+import { PiezasNavigator } from './src/navigation/PiezasNavigator';
+import { VehiculosNavigator } from './src/navigation/VehiculosNavigator';
+
+// Screens
+import { InventarioScreen } from './src/screens/inventario/InventarioScreen';
+import { EstadisticasScreen } from './src/screens/estadisticas/EstadisticasScreen';
+
+// Database
+import { inicializarBaseDatos, sembrarDatosPrueba } from './src/database/dataBase';
+
+// Theme
 import { colores } from './src/theme/colores';
 import { espaciado } from './src/theme/espaciado';
-import { inicializarBaseDatos } from './src/database/dataBase';
+import { tipografia } from './src/theme/tipografia';
+
+const Tab = createBottomTabNavigator();
 
 export default function App() {
-  const [nombre, setNombre] = useState('');
-  const [email, setEmail] = useState('');
-  const [cargando, setCargando] = useState(false);
   const [dbInicializada, setDbInicializada] = useState(false);
+  const [cargando, setCargando] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  // Inicializar base de datos
   useEffect(() => {
-    const iniciarDB = async () => {
-      try {
-        await inicializarBaseDatos();
-        setDbInicializada(true);
-        console.log('✅ Base de datos inicializada');
-      } catch (error) {
-        console.error('❌ Error al inicializar BD:', error);
-        Alert.alert('Error', 'No se pudo inicializar la base de datos');
-      }
-    };
-
-    iniciarDB();
+    iniciarApp();
   }, []);
 
-  const manejarEnvio = () => {
-    setCargando(true);
+  const iniciarApp = async () => {
+    try {
+      setCargando(true);
+      console.log('🚀 Iniciando AutoCiclo Mobile...');
 
-    setTimeout(() => {
-      setCargando(false);
+      // Inicializar base de datos
+      await inicializarBaseDatos();
+      console.log('✅ Base de datos inicializada');
+      
+      // ⚠️ FORZAR LIMPIEZA PARA DATOS DE PRUEBA (Solo para debugging)
+      // Esto borrará todo y volverá a crear las tablas
+      const { limpiarBaseDatos } = require('./src/database/dataBase');
+      await limpiarBaseDatos();
+
+      // Sembrar datos de prueba
+      await sembrarDatosPrueba();
+      
+      // Sembrar datos de prueba si es necesario
+      await sembrarDatosPrueba();
+
+      setDbInicializada(true);
+      setError(null);
+    } catch (error: any) {
+      console.error('❌ Error al inicializar la app:', error);
+      setError(error.message || 'Error al inicializar la aplicación');
       Alert.alert(
-        '¡Éxito!',
-        `Nombre: ${nombre}\nEmail: ${email}`,
+        'Error de Inicialización',
+        'No se pudo inicializar la base de datos. Por favor, reinicia la aplicación.',
         [{ text: 'OK' }]
       );
-    }, 2000);
+    } finally {
+      setCargando(false);
+    }
   };
 
+  // Pantalla de carga
+  if (cargando) {
+    return (
+      <View style={estilos.pantallaCarga}>
+        <Text style={estilos.logo}>🚗</Text>
+        <Text style={estilos.titulo}>AutoCiclo Mobile</Text>
+        <Text style={estilos.subtitulo}>Gestión de Desguace</Text>
+        <ActivityIndicator size="large" color={colores.primario} style={estilos.spinner} />
+        <Text style={estilos.textoCarga}>Inicializando base de datos...</Text>
+      </View>
+    );
+  }
+
+  // Pantalla de error
+  if (error) {
+    return (
+      <View style={estilos.pantallaError}>
+        <Text style={estilos.errorIcono}>⚠️</Text>
+        <Text style={estilos.errorTitulo}>Error de Inicialización</Text>
+        <Text style={estilos.errorMensaje}>{error}</Text>
+      </View>
+    );
+  }
+
+  // App principal
   return (
-    <View style={estilos.container}>
+    <NavigationContainer>
       <StatusBar style="dark" />
 
-      <ScrollView style={estilos.scrollView} contentContainerStyle={estilos.contenido}>
-        {/* Header */}
-        <View style={estilos.header}>
-          <Text style={estilos.titulo}>🚗 AutoCiclo Mobile</Text>
-          <Text style={estilos.subtitulo}>Gestión de Desguace</Text>
-          {dbInicializada && (
-            <Text style={estilos.estadoDB}>✅ Base de datos lista</Text>
-          )}
-        </View>
+      <Tab.Navigator
+        screenOptions={({ route }) => ({
+          tabBarIcon: ({ focused, color, size }) => {
+            let iconName: keyof typeof MaterialIcons.glyphMap = 'home';
 
-        {/* Card de prueba 1: Componentes básicos */}
-        <Card estilo={estilos.card}>
-          <Text style={estilos.cardTitulo}>Prueba de Componentes</Text>
+            if (route.name === 'Piezas') {
+              iconName = 'build';
+            } else if (route.name === 'Vehículos') {
+              iconName = 'directions-car';
+            } else if (route.name === 'Inventario') {
+              iconName = 'inventory';
+            } else if (route.name === 'Estadísticas') {
+              iconName = 'bar-chart';
+            }
 
-          <Input
-            etiqueta="Nombre"
-            placeholder="Escribe tu nombre"
-            value={nombre}
-            onChangeText={setNombre}
-            exito={nombre.length > 3}
-          />
-
-          <Input
-            etiqueta="Email"
-            placeholder="tu@email.com"
-            value={email}
-            onChangeText={setEmail}
-            keyboardType="email-address"
-            error={email && !email.includes('@') ? 'Email inválido' : undefined}
-          />
-
-          <Boton
-            titulo="Enviar"
-            onPress={manejarEnvio}
-            variante="primario"
-            cargando={cargando}
-          />
-        </Card>
-
-        {/* Card de prueba 2: Variantes de botones */}
-        <Card estilo={estilos.card}>
-          <Text style={estilos.cardTitulo}>Variantes de Botones</Text>
-
-          <Boton
-            titulo="Primario"
-            onPress={() => Alert.alert('Botón Primario')}
-            variante="primario"
-            estilo={estilos.boton}
-          />
-
-          <Boton
-            titulo="Secundario"
-            onPress={() => Alert.alert('Botón Secundario')}
-            variante="secundario"
-            estilo={estilos.boton}
-          />
-
-          <Boton
-            titulo="Éxito"
-            onPress={() => Alert.alert('Botón Éxito')}
-            variante="exito"
-            estilo={estilos.boton}
-          />
-
-          <Boton
-            titulo="Peligro"
-            onPress={() => Alert.alert('Botón Peligro')}
-            variante="peligro"
-            estilo={estilos.boton}
-          />
-
-          <Boton
-            titulo="Deshabilitado"
-            onPress={() => {}}
-            variante="primario"
-            deshabilitado
-            estilo={estilos.boton}
-          />
-        </Card>
-
-        {/* Card de prueba 3: Estados de vehículo */}
-        <Card estilo={estilos.card}>
-          <Text style={estilos.cardTitulo}>Estados de Vehículo</Text>
-
-          <View style={estilos.estadoContainer}>
-            <View style={[estilos.estadoChip, { backgroundColor: colores.completo }]}>
-              <Text style={estilos.estadoTexto}>Completo</Text>
-            </View>
-
-            <View style={[estilos.estadoChip, { backgroundColor: colores.desguazando }]}>
-              <Text style={estilos.estadoTexto}>Desguazando</Text>
-            </View>
-
-            <View style={[estilos.estadoChip, { backgroundColor: colores.desguazado }]}>
-              <Text style={estilos.estadoTexto}>Desguazado</Text>
-            </View>
-          </View>
-        </Card>
-
-        {/* Card de prueba 4: Categorías de piezas */}
-        <Card estilo={estilos.card}>
-          <Text style={estilos.cardTitulo}>Categorías de Piezas</Text>
-
-          <View style={estilos.categoriaContainer}>
-            <View style={[estilos.categoriaChip, { backgroundColor: colores.motor }]}>
-              <Text style={estilos.categoriaTexto}>Motor</Text>
-            </View>
-
-            <View style={[estilos.categoriaChip, { backgroundColor: colores.carroceria }]}>
-              <Text style={estilos.categoriaTexto}>Carrocería</Text>
-            </View>
-
-            <View style={[estilos.categoriaChip, { backgroundColor: colores.interior }]}>
-              <Text style={estilos.categoriaTexto}>Interior</Text>
-            </View>
-
-            <View style={[estilos.categoriaChip, { backgroundColor: colores.electronica }]}>
-              <Text style={estilos.categoriaTexto}>Electrónica</Text>
-            </View>
-
-            <View style={[estilos.categoriaChip, { backgroundColor: colores.ruedas }]}>
-              <Text style={estilos.categoriaTexto}>Ruedas</Text>
-            </View>
-
-            <View style={[estilos.categoriaChip, { backgroundColor: colores.otros }]}>
-              <Text style={estilos.categoriaTexto}>Otros</Text>
-            </View>
-          </View>
-        </Card>
-
-        {/* Card presionable */}
-        <Card
-          presionable
-          onPress={() => Alert.alert('Card Presionado', 'Esta tarjeta es presionable')}
-          estilo={estilos.card}
-        >
-          <Text style={estilos.cardTitulo}>📱 Card Presionable</Text>
-          <Text style={estilos.cardDescripcion}>
-            Toca esta tarjeta para ver el efecto
-          </Text>
-        </Card>
-
-        <View style={estilos.footer}>
-          <Text style={estilos.footerTexto}>
-            AutoCiclo Mobile v1.0 - Día 1-2 Completado ✅
-          </Text>
-        </View>
-      </ScrollView>
-    </View>
+            return <MaterialIcons name={iconName} size={size} color={color} />;
+          },
+          tabBarActiveTintColor: colores.primario,
+          tabBarInactiveTintColor: colores.textoSecundario,
+          tabBarStyle: {
+            backgroundColor: colores.superficie,
+            borderTopColor: colores.divisor,
+            paddingBottom: espaciado.sm,
+            paddingTop: espaciado.sm,
+            height: 60,
+          },
+          tabBarLabelStyle: {
+            fontSize: tipografia.tamanoFuente.xs,
+            fontWeight: tipografia.pesoFuente.medio as any,
+          },
+          headerStyle: {
+            backgroundColor: colores.primario,
+          },
+          headerTintColor: colores.superficie,
+          headerTitleStyle: {
+            fontWeight: tipografia.pesoFuente.negrita as any,
+          },
+        })}
+      >
+        <Tab.Screen
+          name="Piezas"
+          component={PiezasNavigator}
+          options={{
+            headerTitle: '🔧 Gestión de Piezas',
+          }}
+        />
+        <Tab.Screen
+          name="Vehículos"
+          component={VehiculosNavigator}
+          options={{
+            headerTitle: '🚗 Gestión de Vehículos',
+          }}
+        />
+        <Tab.Screen
+          name="Inventario"
+          component={InventarioScreen}
+          options={{
+            headerTitle: '📦 Inventario',
+          }}
+        />
+        <Tab.Screen
+          name="Estadísticas"
+          component={EstadisticasScreen}
+          options={{
+            headerTitle: '📊 Estadísticas',
+          }}
+        />
+      </Tab.Navigator>
+    </NavigationContainer>
   );
 }
 
 const estilos = StyleSheet.create({
-  container: {
+  pantallaCarga: {
     flex: 1,
-    backgroundColor: colores.fondo,
-  },
-  scrollView: {
-    flex: 1,
-  },
-  contenido: {
-    padding: espaciado.md,
-  },
-  header: {
+    justifyContent: 'center',
     alignItems: 'center',
-    paddingVertical: espaciado.xl,
+    backgroundColor: colores.fondo,
+    padding: espaciado.xl,
+  },
+  logo: {
+    fontSize: 80,
+    marginBottom: espaciado.lg,
   },
   titulo: {
-    fontSize: 32,
-    fontWeight: 'bold',
+    fontSize: tipografia.tamanoFuente.xxxl,
+    fontWeight: tipografia.pesoFuente.negrita as any,
     color: colores.primario,
-    marginBottom: espaciado.sm,
-  },
-  subtitulo: {
-    fontSize: 16,
-    color: colores.textoSecundario,
     marginBottom: espaciado.xs,
   },
-  estadoDB: {
-    fontSize: 12,
-    color: colores.exito,
-    marginTop: espaciado.sm,
+  subtitulo: {
+    fontSize: tipografia.tamanoFuente.lg,
+    color: colores.textoSecundario,
+    marginBottom: espaciado.xl,
   },
-  card: {
-    marginBottom: espaciado.md,
+  spinner: {
+    marginVertical: espaciado.lg,
   },
-  cardTitulo: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: colores.texto,
-    marginBottom: espaciado.md,
-  },
-  cardDescripcion: {
-    fontSize: 14,
+  textoCarga: {
+    fontSize: tipografia.tamanoFuente.md,
     color: colores.textoSecundario,
   },
-  boton: {
-    marginBottom: espaciado.sm,
-  },
-  estadoContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: espaciado.sm,
-  },
-  estadoChip: {
-    paddingHorizontal: espaciado.md,
-    paddingVertical: espaciado.sm,
-    borderRadius: 20,
-  },
-  estadoTexto: {
-    color: '#FFFFFF',
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  categoriaContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: espaciado.sm,
-  },
-  categoriaChip: {
-    paddingHorizontal: espaciado.md,
-    paddingVertical: espaciado.sm,
-    borderRadius: 20,
-  },
-  categoriaTexto: {
-    color: '#FFFFFF',
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  footer: {
+  pantallaError: {
+    flex: 1,
+    justifyContent: 'center',
     alignItems: 'center',
-    paddingVertical: espaciado.xl,
+    backgroundColor: colores.fondo,
+    padding: espaciado.xl,
   },
-  footerTexto: {
-    fontSize: 12,
+  errorIcono: {
+    fontSize: 80,
+    marginBottom: espaciado.lg,
+  },
+  errorTitulo: {
+    fontSize: tipografia.tamanoFuente.xxl,
+    fontWeight: tipografia.pesoFuente.negrita as any,
+    color: colores.error,
+    marginBottom: espaciado.md,
+    textAlign: 'center',
+  },
+  errorMensaje: {
+    fontSize: tipografia.tamanoFuente.md,
     color: colores.textoSecundario,
     textAlign: 'center',
+    lineHeight: tipografia.tamanoFuente.md * 1.5,
   },
 });
